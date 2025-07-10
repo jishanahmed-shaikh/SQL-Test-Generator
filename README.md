@@ -28,9 +28,10 @@ sql-query-generator/
 ├── script.js           # JavaScript logic
 ├── config.js           # Configuration file (secure API management)
 ├── README.md           # Project documentation
-└── .github/
-    └── workflows/
-        └── deploy.yml   # GitHub Actions deployment
+└── backend-proxy/
+    └──index.js
+    └──package-lock.json
+    └──package.json
 ```
 
 ---
