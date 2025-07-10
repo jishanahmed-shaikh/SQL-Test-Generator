@@ -6,6 +6,7 @@ let feedbackCounts = { good: 0, bad: 0 };
 // DOM Elements
 const levelButtons = document.querySelectorAll('.level-btn');
 const generateBtn = document.getElementById('generateBtn');
+const clearBtn = document.getElementById('clearBtn');
 const testCaseCount = document.getElementById('testCaseCount');
 const questionsContainer = document.getElementById('questionsContainer');
 const loadingOverlay = document.getElementById('loadingOverlay');
@@ -31,6 +32,7 @@ function initializeApp() {
     });
     
     generateBtn.addEventListener('click', generateQuestions);
+    clearBtn.addEventListener('click', clearResults);
     goodFeedback.addEventListener('click', () => provideFeedback('good'));
     badFeedback.addEventListener('click', () => provideFeedback('bad'));
     copyAllBtn.addEventListener('click', copyAllQuestions);
@@ -70,24 +72,44 @@ async function generateQuestions() {
     generateBtn.disabled = true;
     
     try {
-        const questions = await generateQuestionsWithFallback();
+        const questions = await generateQuestionsWithAPI();
         displayQuestions(questions);
         totalGenerated += questions.length;
         updateUI();
         saveData();
     } catch (error) {
         console.error('Error generating questions:', error);
-        alert('Error generating questions. Please try again.');
+        alert('Error generating questions. Please check your API key and try again.');
     } finally {
         showLoading(false);
         generateBtn.disabled = false;
     }
 }
 
+function clearResults() {
+    questionsContainer.innerHTML = `
+        <div class="placeholder">
+            <i class="fas fa-lightbulb"></i>
+            <p>Select a level and click Generate to see questions</p>
+        </div>
+    `;
+    copyAllBtn.style.display = 'none';
+    
+    // Show feedback
+    const event = new CustomEvent('show-toast', {
+        detail: { message: 'Results cleared!', type: 'success' }
+    });
+    document.dispatchEvent(event);
+}
+
 async function callGroqAPI(level, count) {
-    // For GitHub Pages deployment, the API key will be injected during build
-    // For local development, you can temporarily set it here (remember to remove before committing)
     const apiKey = getApiKey();
+    
+    if (!apiKey) {
+        // Show API key setup modal
+        showApiKeyModal();
+        throw new Error('API key not set');
+    }
     
     const prompts = {
         basic: `Generate ${count} basic SQL natural language questions for testing. These should be simple queries like counting, basic filtering, or simple aggregations. Focus on common business scenarios like customers, orders, products, sales, etc. Return only the questions, one per line.`,
@@ -95,14 +117,14 @@ async function callGroqAPI(level, count) {
         advanced: `Generate ${count} advanced SQL natural language questions for testing. These should involve complex JOINs, window functions, CTEs, nested subqueries, and advanced analytics. Include time-series analysis, ranking, and complex business logic. Return only the questions, one per line.`
     };
     
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const response = await fetch(CONFIG.API_BASE_URL, {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${apiKey}`,
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            model: 'mixtral-8x7b-32768',
+            model: CONFIG.MODEL,
             messages: [
                 {
                     role: 'system',
@@ -113,13 +135,14 @@ async function callGroqAPI(level, count) {
                     content: prompts[level]
                 }
             ],
-            max_tokens: 1000,
-            temperature: 0.7
+            max_tokens: CONFIG.MAX_TOKENS,
+            temperature: CONFIG.TEMPERATURE
         })
     });
     
     if (!response.ok) {
-        throw new Error(`API request failed: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`API request failed: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
     }
     
     const data = await response.json();
@@ -301,24 +324,128 @@ const fallbackQuestions = {
     ]
 };
 
-// API Key management for different environments
+// API Key management - Get from secure storage
 function getApiKey() {
-    // For GitHub Pages deployment with secrets
-    if (window.location.hostname.includes('github.io')) {
-        return 'GROQ_API_KEY_PLACEHOLDER'; // This will be replaced during deployment
-    }
-    
-    // For local development - you can temporarily set your API key here
-    // IMPORTANT: Remove this before committing to GitHub
-    return 'YOUR_GROQ_API_KEY_HERE';
+    // Use the secure API key management from config.js
+    return window.getApiKey ? window.getApiKey() : null;
 }
 
-// Use fallback questions if API fails
-async function generateQuestionsWithFallback() {
+// API Key Modal Functions
+function showApiKeyModal() {
+    // Remove existing modal if any
+    const existingModal = document.getElementById('apiKeyModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    const modal = document.createElement('div');
+    modal.id = 'apiKeyModal';
+    modal.innerHTML = `
+        <div class="modal-overlay">
+            <div class="modal-content">
+                <h3><i class="fas fa-key"></i> Setup GROQ API Key</h3>
+                <p>To generate real questions, you need a GROQ API key. Get one for free at <a href="https://console.groq.com/" target="_blank">console.groq.com</a></p>
+                <div class="api-key-input">
+                    <input type="password" id="apiKeyInput" placeholder="Enter your GROQ API key">
+                    <button id="saveApiKey" class="save-btn">
+                        <i class="fas fa-save"></i> Save Key
+                    </button>
+                </div>
+                <div class="modal-buttons">
+                    <button id="useDemo" class="demo-btn">
+                        <i class="fas fa-play"></i> Use Demo Questions
+                    </button>
+                    <button id="closeModal" class="close-btn">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Add event listeners
+    document.getElementById('saveApiKey').addEventListener('click', saveApiKey);
+    document.getElementById('useDemo').addEventListener('click', useDemoQuestions);
+    document.getElementById('closeModal').addEventListener('click', closeApiKeyModal);
+    document.getElementById('apiKeyInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            saveApiKey();
+        }
+    });
+    
+    // Focus on input
+    document.getElementById('apiKeyInput').focus();
+}
+
+function saveApiKey() {
+    const apiKey = document.getElementById('apiKeyInput').value.trim();
+    if (apiKey) {
+        if (window.setApiKey && window.setApiKey(apiKey)) {
+            closeApiKeyModal();
+            const event = new CustomEvent('show-toast', {
+                detail: { message: 'API key saved successfully!', type: 'success' }
+            });
+            document.dispatchEvent(event);
+            // Retry generating questions
+            setTimeout(() => generateQuestions(), 500);
+        } else {
+            const event = new CustomEvent('show-toast', {
+                detail: { message: 'Failed to save API key', type: 'error' }
+            });
+            document.dispatchEvent(event);
+        }
+    } else {
+        const event = new CustomEvent('show-toast', {
+            detail: { message: 'Please enter a valid API key', type: 'error' }
+        });
+        document.dispatchEvent(event);
+    }
+}
+
+function useDemoQuestions() {
+    closeApiKeyModal();
+    const event = new CustomEvent('show-toast', {
+        detail: { message: 'Using demo questions', type: 'info' }
+    });
+    document.dispatchEvent(event);
+    
+    // Generate demo questions
+    const questions = fallbackQuestions[currentLevel];
+    const count = parseInt(testCaseCount.value);
+    const demoQuestions = questions.slice(0, count);
+    displayQuestions(demoQuestions);
+    totalGenerated += demoQuestions.length;
+    updateUI();
+    saveData();
+}
+
+function closeApiKeyModal() {
+    const modal = document.getElementById('apiKeyModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+// Use API with fallback to hardcoded questions
+async function generateQuestionsWithAPI() {
     try {
         return await callGroqAPI(currentLevel, parseInt(testCaseCount.value));
     } catch (error) {
-        console.log('Using fallback questions due to API error');
+        console.log('Using fallback questions due to API error:', error.message);
+        
+        if (error.message === 'API key not set') {
+            return; // Modal is already shown
+        }
+        
+        // Show error message to user
+        const event = new CustomEvent('show-toast', {
+            detail: { message: 'API error. Using demo questions.', type: 'info' }
+        });
+        document.dispatchEvent(event);
+        
+        // Return fallback questions
         const questions = fallbackQuestions[currentLevel];
         const count = parseInt(testCaseCount.value);
         return questions.slice(0, count);

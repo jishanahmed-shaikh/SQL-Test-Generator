@@ -10,9 +10,11 @@ A modern web application that generates natural language questions for SQL testi
 - ⭐ **Multi-level Question Generation**: Basic, Intermediate, and Advanced SQL questions  
 - 🔢 **Customizable Quantity**: Generate 1–10 questions at a time  
 - 📋 **One-Click Copy**: Copy individual questions or all questions at once  
+- 🗑️ **Clear Results**: Reset generated questions with a single click
+- 🔐 **Secure API Key Management**: No API keys exposed in code
 - 👍 **Feedback System**: Rate questions with thumbs up/down  
 - 📈 **Progress Tracking**: Track total generated questions and user feedback  
-- 📱 **Responsive Design**: Works on desktop and mobile devices  
+- 📱 **Responsive Design**: Works on desktop and mobile devices without scrolling
 - 🎨 **Modern UI**: Clean, professional interface with smooth animations  
 - ⚡ **Powered by Groq API**: Fast and reliable question generation  
 
@@ -23,8 +25,9 @@ A modern web application that generates natural language questions for SQL testi
 ```
 sql-query-generator/
 ├── index.html          # Main HTML file
-├── styles.css          # CSS styling
+├── styles.css          # CSS styling (compact, no scrolling)
 ├── script.js           # JavaScript logic
+├── config.js           # Configuration file (secure API management)
 ├── README.md           # Project documentation
 └── .github/
     └── workflows/
@@ -42,31 +45,44 @@ git clone https://github.com/jishanahmed-shaikh/SQL-TestCases-Generator.git
 cd SQL-TestCases-Generator
 ```
 
-### 🔐 Step 2: Configure Environment Variables
+### 🔐 Step 2: Configure GROQ API Key (Secure Method)
 
+#### Option A: User-Friendly Setup (Recommended)
+1. **No setup required!** The app will prompt users to enter their API key when they first try to generate questions
+2. Users can get a free API key from [https://console.groq.com/](https://console.groq.com/)
+3. The API key is stored securely in the user's browser localStorage
+4. **No API keys are exposed in the code or GitHub repository**
+
+#### Option B: GitHub Pages with Environment Variables
 1. Go to your GitHub repository  
 2. Navigate to ⚙️ **Settings** → 🔒 **Secrets and variables** → 🧩 **Actions**  
-3. Click **“New repository secret”**  
+3. Click **"New repository secret"**  
 4. Name: `GROQ_API_KEY`  
 5. Value: *Your Groq API key*  
+6. The GitHub Actions workflow will automatically use this key during deployment
+
+### 🔑 Getting a GROQ API Key
+1. Visit [https://console.groq.com/](https://console.groq.com/)
+2. Sign up or log in to your account
+3. Navigate to API Keys section
+4. Create a new API key
+5. Copy the key (you'll enter it in the app when prompted)
 
 ### 💻 Step 3: Local Development
 
-#### 🧪 Option A: Direct API Key (for testing only)
+#### 🧪 Option A: Direct File Opening
+Simply open `index.html` in your browser. The app will work immediately with demo questions, and users can add their API key when needed.
 
-```javascript
-// In script.js, replace this line:
-const apiKey = process.env.GROQ_API_KEY || 'YOUR_GROQ_API_KEY_HERE';
-// With your actual API key (remember to remove before committing):
-const apiKey = 'your-actual-api-key-here';
-```
-
-#### 🖥 Option B: Use a local server with environment variables
-
+#### 🖥 Option B: Use a local server
 ```bash
-npm install -g http-server
-export GROQ_API_KEY="your-api-key-here"
-http-server -p 8080
+# Using Python
+python -m http.server 8000
+
+# Using Node.js
+npx http-server
+
+# Using PHP
+php -S localhost:8000
 ```
 
 ### 🚀 Step 4: Deploy to GitHub Pages
@@ -74,7 +90,7 @@ http-server -p 8080
 1. Push your code to GitHub  
 2. Go to **Settings → Pages**  
 3. **Source**: Deploy from a branch  
-4. **Branch**: `main` or `gh-pages`  
+4. **Branch**: `gh-pages` (created automatically by GitHub Actions)
 5. Your site will be live at:  
    `https://yourusername.github.io/sql-query-generator`  
 
@@ -111,26 +127,47 @@ Choose from Basic, Intermediate, or Advanced based on your needs.
 Use the number input to specify how many questions (1–10).
 
 ### 3️⃣ Generate Questions  
-Click the **“Generate Questions”** button.
+Click the **"Generate Questions"** button.
 
-### 4️⃣ Copy and Use  
+### 4️⃣ API Key Setup (First Time Only)
+- If you haven't set up an API key, a modal will appear
+- Enter your GROQ API key or choose to use demo questions
+- Your key is stored securely in your browser
+
+### 5️⃣ Copy and Use  
 - 📎 Copy individual questions  
 - 📋 Copy all questions at once  
+- 🗑️ Clear results to start fresh
 - 🧪 Use them to test your SQL system
 
-### 5️⃣ Provide Feedback  
+### 6️⃣ Provide Feedback  
 👍 Thumbs up or 👎 thumbs down to rate questions.
 
 ---
 
 ## 🔌 API Integration
 
-The application uses the **Groq API** for question generation.  
-Ensure:
+The application uses the **Groq API** for question generation with secure key management:
 
-1. ✅ Valid Groq API key  
-2. 💰 Sufficient API credits  
-3. 🛡 Proper error handling  
+### 🔐 Security Features
+- ✅ **No API keys in code** - Keys are never committed to GitHub
+- ✅ **User-controlled** - Users enter their own API keys
+- ✅ **Local storage** - Keys stored securely in user's browser
+- ✅ **Environment variables** - Optional GitHub Secrets support
+- ✅ **Fallback mode** - Works with demo questions if no API key
+
+### 🔧 Configuration Options
+
+You can customize the API settings in `config.js`:
+
+```javascript
+const CONFIG = {
+    API_BASE_URL: 'https://api.groq.com/openai/v1/chat/completions',
+    MODEL: 'mixtral-8x7b-32768',  // You can change the model
+    MAX_TOKENS: 1000,             // Adjust response length
+    TEMPERATURE: 0.7              // Adjust creativity (0.0-1.0)
+};
+```
 
 ---
 
@@ -154,7 +191,7 @@ const prompts = {
 Modify `styles.css` for:
 
 - 🎨 Color scheme  
-- 🧱 Layout  
+- 🧱 Layout (currently optimized for no scrolling)
 - ✨ Animations  
 
 ### 🧠 Add Features
@@ -197,47 +234,31 @@ Examples:
 
 For help:
 
-1. 🔄 Check fallback questions  
-2. 🔐 Verify API key in GitHub Secrets  
-3. 🧰 Check browser console for errors  
-4. 🔗 Ensure you're using HTTPS  
+1. 🔄 Check if you're using demo questions (API key not set)
+2. 🔑 Verify your GROQ API key is correct
+3. 💰 Ensure you have sufficient API credits
+4. 🌐 Check your internet connection
 
----
+### 🚨 Troubleshooting
 
-## 🧯 Troubleshooting
+**"API key not set" modal appears:**
+- Enter your GROQ API key in the modal
+- Or click "Use Demo Questions" to continue without API
 
-### ❌ API Key Not Working?
-- Confirm key is correctly set in Secrets  
-- Check for remaining credits  
-- Make sure permissions are correct  
+**API errors:**
+- Check your API key is valid
+- Ensure you have credits in your GROQ account
+- Verify the API endpoint is accessible
 
-### ❓ Questions Not Generating?
-- Look at browser console  
-- Check internet connection  
-- Try fewer questions  
+**Layout issues:**
+- The app is now fully responsive and compact
+- No vertical or horizontal scrolling required
+- Try refreshing the page if you see layout problems
 
-### 📋 Copy Issues?
-- Make sure you're on HTTPS  
-- Allow clipboard access  
-- Try a different browser  
+### 🔐 Security Notes
 
-### 🆘 Fallback Mode  
-If API fails, fallback questions ensure continued functionality.
-
----
-
-## 🚀 Performance Optimization
-
-- 💾 Caches questions in `localStorage`  
-- 🐢 Lazy loading  
-- 🌀 Optimized animations  
-- 🚫 Minimal API calls  
-
----
-
-## 🔐 Security Notes
-
-- 🗝 API keys are injected securely via GitHub Secrets  
-- 🔒 No sensitive data stored in `localStorage`  
-- 🔐 All API calls use HTTPS  
+- 🗝 API keys are never stored in the code repository
+- 🔒 Keys are stored securely in user's browser localStorage
+- 🔐 All API calls use HTTPS
 - 🧼 Input validation guards against injection
+- 🛡️ Environment variables supported for GitHub deployment
