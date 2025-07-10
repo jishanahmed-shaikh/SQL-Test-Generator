@@ -103,20 +103,13 @@ function clearResults() {
 }
 
 async function callGroqAPI(level, count) {
-    const apiKey = getApiKey();
-    
-    if (!apiKey) {
-        // Show API key setup modal
-        showApiKeyModal();
-        throw new Error('API key not set');
-    }
-    
+    const apiKey = window.getApiKey();
     const prompts = {
         basic: `Generate ${count} basic SQL natural language questions for testing. These should be simple queries like counting, basic filtering, or simple aggregations. Focus on common business scenarios like customers, orders, products, sales, etc. Return only the questions, one per line.`,
         intermediate: `Generate ${count} intermediate SQL natural language questions for testing. These should involve JOINs, GROUP BY, subqueries, and more complex filtering. Include scenarios with multiple tables and conditional logic. Return only the questions, one per line.`,
         advanced: `Generate ${count} advanced SQL natural language questions for testing. These should involve complex JOINs, window functions, CTEs, nested subqueries, and advanced analytics. Include time-series analysis, ranking, and complex business logic. Return only the questions, one per line.`
     };
-    
+
     const response = await fetch(CONFIG.API_BASE_URL, {
         method: 'POST',
         headers: {
@@ -126,35 +119,28 @@ async function callGroqAPI(level, count) {
         body: JSON.stringify({
             model: CONFIG.MODEL,
             messages: [
-                {
-                    role: 'system',
-                    content: 'You are a SQL expert who creates natural language questions that would typically be converted to SQL queries. Focus on real business scenarios and practical use cases.'
-                },
-                {
-                    role: 'user',
-                    content: prompts[level]
-                }
+                { role: 'user', content: prompts[level] }
             ],
+            temperature: CONFIG.TEMPERATURE,
             max_tokens: CONFIG.MAX_TOKENS,
-            temperature: CONFIG.TEMPERATURE
+            top_p: CONFIG.TOP_P,
+            stream: false,
+            reasoning_effort: CONFIG.REASONING_EFFORT,
+            stop: null
         })
     });
-    
+
     if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`API request failed: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+        throw new Error(`API request failed: ${response.status}`);
     }
-    
     const data = await response.json();
     const questionsText = data.choices[0].message.content;
-    
     // Parse questions from response
     const questions = questionsText
         .split('\n')
         .filter(q => q.trim())
         .map(q => q.replace(/^\d+\.\s*/, '').trim())
         .filter(q => q.length > 0);
-    
     return questions;
 }
 
