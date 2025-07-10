@@ -164,7 +164,7 @@ You can customize the API settings in `config.js`:
 const CONFIG = {
     API_BASE_URL: 'https://api.groq.com/openai/v1/chat/completions',
     MODEL: 'mixtral-8x7b-32768',  // You can change the model
-    MAX_TOKENS: 1000,             // Adjust response length
+    MAX_TOKENS: 3000,             // Adjust response length
     TEMPERATURE: 0.7              // Adjust creativity (0.0-1.0)
 };
 ```
