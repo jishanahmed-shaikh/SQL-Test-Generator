@@ -1,6 +1,6 @@
 // Configuration file for SQL Test Cases Generator
 const CONFIG = {
-    API_BASE_URL: 'http://localhost:3001/api/groq', // Use the backend proxy
+    API_BASE_URL: 'https://sql-test-generator.onrender.com', // Use the backend proxy
     MODEL: 'qwen/qwen3-32b',
     MAX_TOKENS: 4096,
     TEMPERATURE: 0.6,
