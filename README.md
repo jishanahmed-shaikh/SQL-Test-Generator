@@ -40,8 +40,8 @@ sql-query-generator/
 ### 📥 Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/jishanahmed-shaikh/SQL-TestCases-Generator.git
-cd SQL-TestCases-Generator
+git clone https://github.com/jishanahmed-shaikh/SQL-Test-Generator.git
+cd SQL-Test-Generator
 ```
 
 ### 🔐 Step 2: Configure GROQ API Key (Secure Method)
