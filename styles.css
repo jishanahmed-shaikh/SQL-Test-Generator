@@ -6,10 +6,34 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(95deg, hsl(228, 77%, 62%) 0%, #af6f6f 100%);
     min-height: 100vh;
-    color: #333;
-    overflow-x: hidden; /* Prevent horizontal scrolling */
+    color: #e2e8f0;
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* Animated SQL-themed SVG background */
+.sql-bg {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+.sql-float {
+    position: absolute;
+    opacity: 0.13;
+    animation: floatSQL 12s infinite linear;
+}
+.sql-float.db { left: 10vw; top: 20vh; width: 60px; animation-delay: 0s; }
+.sql-float.code { left: 70vw; top: 60vh; width: 48px; animation-delay: 2s; }
+.sql-float.bracket { left: 40vw; top: 80vh; width: 40px; animation-delay: 4s; }
+.sql-float.query { left: 80vw; top: 10vh; width: 54px; animation-delay: 6s; }
+@keyframes floatSQL {
+    0% { transform: translateY(0) scale(1) rotate(0deg); }
+    50% { transform: translateY(-40px) scale(1.1) rotate(8deg); }
+    100% { transform: translateY(0) scale(1) rotate(0deg); }
 }
 
 .container {
@@ -413,6 +437,16 @@ body {
     padding: 15px 20px;
     text-align: center;
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    position: relative;
+    z-index: 1;
+}
+.stats-centered {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 30px;
+    flex: 1;
 }
 
 .stats {
@@ -716,4 +750,84 @@ body {
     .modal-buttons {
         flex-direction: column;
     }
+}
+
+/* Clear Stats Button (bottom left) */
+.clear-stats-btn {
+  background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 25px;
+  height: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  cursor: pointer;
+  font-size: 0.8em;
+  margin-right: 18px;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.clear-stats-btn:hover {
+  box-shadow: 0 4px 12px rgba(245, 101, 101, 0.3);
+  transform: scale(1.08);
+}
+
+/* Passcode Modal */
+.passcode-modal {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 10002;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.passcode-modal-content {
+  background: #fff;
+  border-radius: 12px;
+  padding: 32px 24px 24px 24px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  text-align: center;
+  min-width: 260px;
+}
+.passcode-modal-content h4 {
+  margin-bottom: 18px;
+  color: #e53e3e;
+}
+#passcodeInput {
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 16px;
+  width: 80%;
+  font-size: 1em;
+}
+#submitPasscodeBtn {
+  padding: 8px 18px;
+  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+#submitPasscodeBtn:hover {
+  background: linear-gradient(135deg, #38a169 0%, #48bb78 100%);
+}
+
+/* Breaking/Dissolving Animation */
+@keyframes breakAndFade {
+  0% { opacity: 1; transform: scale(1) rotate(0deg); }
+  20% { opacity: 0.7; transform: scale(0.9) rotate(60deg); }
+  40% { opacity: 0.6; transform: scale(1.1) rotate(-80deg); }
+  60% { opacity: 0.3; transform: scale(0.9) rotate(20deg); }
+  80% { opacity: 0.1; transform: scale(0.9) rotate(90deg); }
+  100% { opacity: 0; transform: scale(0.7) rotate(-30deg); }
+}
+.clear-stats-btn.break {
+  animation: breakAndFade 0.7s forwards;
+  pointer-events: none;
 }

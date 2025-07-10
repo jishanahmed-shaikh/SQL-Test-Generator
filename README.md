@@ -1,7 +1,24 @@
 
 # 🧠 SQL Query Test Cases Generator
 
-A modern web application that generates natural language questions for SQL testing across different difficulty levels.
+A modern web application that generates natural language 
+questions for SQL testing across different difficulty levels.
+
+---
+## 🚀 Backend Proxy Server (NEW)
+
+This project now includes a secure backend proxy to keep your GROQ API key hidden and allow unlimited users to use the app without exposing your key.
+
+### How to use:
+1. Go to the `backend-proxy` folder.
+2. Copy your GROQ API key into the `.env` file.
+3. Run:
+   ```bash
+   npm install
+   node index.js
+   ```
+4. The proxy will run at `http://localhost:3001/api/groq`.
+5. The frontend is already configured to use this proxy.
 
 ---
 

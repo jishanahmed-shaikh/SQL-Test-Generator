@@ -8,6 +8,12 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <div class="sql-bg">
+      <svg class="sql-float db" viewBox="0 0 64 64"><ellipse cx="32" cy="16" rx="28" ry="10" fill="#4fd1c5"/><rect x="4" y="16" width="56" height="32" rx="14" fill="#2b6cb0"/><ellipse cx="32" cy="48" rx="28" ry="10" fill="#4fd1c5"/></svg>
+      <svg class="sql-float code" viewBox="0 0 48 48"><rect x="6" y="10" width="36" height="28" rx="6" fill="#ecc94b"/><text x="12" y="30" font-size="18" fill="#2d3748">{ }</text></svg>
+      <svg class="sql-float bracket" viewBox="0 0 40 40"><text x="0" y="32" font-size="36" fill="#f56565">[ ]</text></svg>
+      <svg class="sql-float query" viewBox="0 0 54 54"><ellipse cx="27" cy="27" rx="24" ry="10" fill="#805ad5"/><text x="14" y="34" font-size="28" fill="#fff">SQL</text></svg>
+    </div>
     <div class="container">
         <header class="header">
             <h1><i class="fas fa-database"></i> SQL Query Test Cases Generator</h1>
@@ -30,7 +36,7 @@
                     <h3><i class="fas fa-layer-group"></i> Difficulty Level</h3>
                     <div class="level-buttons">
                         <button class="level-btn" data-level="basic">
-                            <i class="fas fa-star"></i> Basic
+                            <i class="fas fa-star"></i><br> Basic
                         </button>
                         <button class="level-btn" data-level="intermediate">
                             <i class="fas fa-star"></i><i class="fas fa-star"></i> Intermediate
@@ -92,12 +98,25 @@
         </div>
 
         <footer class="footer">
-            <div class="stats">
-                <span><i class="fas fa-user"></i> User Number: <span id="userCount">1</span></span>
-                <span><i class="fas fa-clipboard-list"></i> Total Test Cases Generated Until Now: <span id="totalGenerated">0</span></span>
+            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                <button class="clear-stats-btn" id="clearStatsBtn" title="Admin: Clear Stats">
+                  <i class="fas fa-exclamation-triangle"></i>
+                </button>
+                <div class="stats stats-centered">
+                    <span><i class="fas fa-user"></i> User Number: <span id="userCount">1</span></span>
+                    <span><i class="fas fa-clipboard-list"></i> Total Test Cases Generated Until Now: <span id="totalGenerated">0</span></span>
+                </div>
+                <div style="width:32px;"></div>
             </div>
         </footer>
-    </div>
+
+        <div class="passcode-modal" id="passcodeModal" style="display:none;">
+          <div class="passcode-modal-content">
+            <h4>Enter Passcode to Clear Stats</h4>
+            <input type="password" id="passcodeInput" placeholder="Passcode" />
+            <button id="submitPasscodeBtn">Submit</button>
+          </div>
+        </div>
 
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loading-spinner">

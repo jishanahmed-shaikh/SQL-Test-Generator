@@ -1,7 +1,6 @@
 // Configuration file for SQL Test Cases Generator
 const CONFIG = {
-    GROQ_API_KEY: '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', // <--- PUT YOUR KEY HERE
-    API_BASE_URL: 'https://api.groq.com/openai/v1/chat/completions',
+    API_BASE_URL: 'http://localhost:3001/api/groq', // Use the backend proxy
     MODEL: 'qwen/qwen3-32b',
     MAX_TOKENS: 4096,
     TEMPERATURE: 0.6,
@@ -9,5 +8,4 @@ const CONFIG = {
     REASONING_EFFORT: 'default'
 };
 
-// For browser use
-window.getApiKey = () => CONFIG.GROQ_API_KEY; 
+window.getApiKey = () => null; // Not needed, backend handles the key 
