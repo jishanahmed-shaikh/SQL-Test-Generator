@@ -377,6 +377,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             stop: null
         };
 
+        console.log('Making API request to:', CONFIG.API_BASE_URL);
+        console.log('Payload:', payload);
+
         const response = await fetch(CONFIG.API_BASE_URL, {
             method: 'POST',
             headers: { 
@@ -385,11 +388,19 @@ document.addEventListener('DOMContentLoaded', async function() {
             body: JSON.stringify(payload)
         });
 
+        console.log('API Response status:', response.status, response.statusText);
+
         if (!response.ok) {
-            throw new Error(`API request failed: ${response.status} - ${response.statusText}`);
+            const errorData = await response.json().catch(() => ({}));
+            console.error('API Error Response:', errorData);
+            throw new Error(`API request failed: ${response.status} - ${response.statusText}. Details: ${JSON.stringify(errorData)}`);
         }
+        
         const data = await response.json();
+        console.log('API Response data:', data);
+        
         if (!data.choices || data.choices.length === 0 || !data.choices[0].message) {
+            console.error('Invalid API response structure:', data);
             throw new Error("Invalid API response structure.");
         }
 
