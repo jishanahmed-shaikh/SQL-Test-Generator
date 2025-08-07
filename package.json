@@ -1,16 +1,17 @@
 {
   "name": "sql-testcases-generator",
-  "version": "1.0.0",
-  "description": "SQL Query Test Cases Generator with Global Stats",
+  "version": "2.0.0",
+  "description": "SQL Query Test Cases Generator with Global Stats and AI",
   "scripts": {
-    "build": "node build-config.js",
     "dev": "vercel dev",
     "deploy": "vercel --prod"
   },
   "keywords": ["sql", "testing", "groq", "ai", "vercel"],
   "author": "",
   "license": "MIT",
-  "dependencies": {},
+  "dependencies": {
+    "groq-sdk": "^0.7.0"
+  },
   "devDependencies": {
     "vercel": "^32.0.0"
   }

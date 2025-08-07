@@ -1,28 +1,95 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>API Test</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        button { padding: 10px 20px; font-size: 16px; margin: 10px 0; }
-        #result { margin-top: 20px; padding: 10px; border: 1px solid #ccc; }
-        .success { background-color: #d4edda; border-color: #c3e6cb; }
-        .error { background-color: #f8d7da; border-color: #f5c6cb; }
-        pre { white-space: pre-wrap; word-wrap: break-word; }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
     </style>
 </head>
+
 <body>
     <h1>🧪 Groq API Test</h1>
-    <button onclick="testAPI()">Test API Connection</button>
-    <button onclick="testFullGeneration()">Test Full Question Generation</button>
+    <button onclick="testStatus()">1. Test API Status</button>
+    <button onclick="testAPI()">2. Test API Connection</button>
+    <button onclick="testFullGeneration()">3. Test Full Question Generation</button>
     <div id="result"></div>
 
     <script>
+        async function testStatus() {
+            const result = document.getElementById('result');
+            result.innerHTML = '🔄 Testing API status...';
+            result.className = '';
+            
+            try {
+                const response = await fetch('/api/groq', {
+                    method: 'GET'
+                });
+
+                console.log('Status response:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Status data:', data);
+                    
+                    result.className = 'success';
+                    result.innerHTML = `
+                        <h3>✅ API Status Check Successful!</h3>
+                        <p><strong>Status:</strong> ${data.status}</p>
+                        <p><strong>Has API Key:</strong> ${data.hasApiKey ? '✅ Yes' : '❌ No'}</p>
+                        <p><strong>Timestamp:</strong> ${data.timestamp}</p>
+                    `;
+                } else {
+                    const errorText = await response.text();
+                    result.className = 'error';
+                    result.innerHTML = `
+                        <h3>❌ API Status Check Failed</h3>
+                        <p><strong>Status:</strong> ${response.status}</p>
+                        <p><strong>Error:</strong> ${errorText}</p>
+                    `;
+                }
+            } catch (error) {
+                console.error('Status error:', error);
+                result.className = 'error';
+                result.innerHTML = `<h3>❌ Status Check Error: ${error.message}</h3>`;
+            }
+        }
+
         async function testAPI() {
             const result = document.getElementById('result');
             result.innerHTML = '🔄 Testing API connection...';
             result.className = '';
-            
+
             try {
                 const response = await fetch('/api/groq', {
                     method: 'POST',
@@ -42,7 +109,7 @@
                 console.log('Response status:', response.status);
                 const data = await response.json();
                 console.log('Response data:', data);
-                
+
                 if (response.ok && data.choices && data.choices[0]) {
                     result.className = 'success';
                     result.innerHTML = `
@@ -73,7 +140,7 @@
             const result = document.getElementById('result');
             result.innerHTML = '🔄 Testing SQL question generation...';
             result.className = '';
-            
+
             try {
                 const response = await fetch('/api/groq', {
                     method: 'POST',
@@ -83,7 +150,8 @@
                     body: JSON.stringify({
                         model: 'llama-3.1-70b-versatile',
                         messages: [
-                            { role: 'user', content: `Generate exactly 3 SQL natural language questions for testing. These should be simple queries like counting, basic filtering, or simple aggregations. Focus on common business scenarios like customers, orders, products, sales, etc.
+                            {
+                                role: 'user', content: `Generate exactly 3 SQL natural language questions for testing. These should be simple queries like counting, basic filtering, or simple aggregations. Focus on common business scenarios like customers, orders, products, sales, etc.
 
 IMPORTANT FORMATTING RULES:
 - Output EXACTLY 3 questions
@@ -106,11 +174,11 @@ Which products have the highest sales?` }
                 console.log('Response status:', response.status);
                 const data = await response.json();
                 console.log('Response data:', data);
-                
+
                 if (response.ok && data.choices && data.choices[0]) {
                     const content = data.choices[0].message.content.trim();
                     const questions = content.split('\n').map(q => q.trim()).filter(q => q.length > 0);
-                    
+
                     result.className = 'success';
                     result.innerHTML = `
                         <h3>✅ Question Generation Successful!</h3>
@@ -139,4 +207,5 @@ Which products have the highest sales?` }
         }
     </script>
 </body>
+
 </html>
