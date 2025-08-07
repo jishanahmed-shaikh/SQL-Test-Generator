@@ -1,62 +1,173 @@
 console.log('Script loaded!');
 
-// Global variables for Firebase
-let app, auth, db;
-let userId = 'anonymous'; // Default until authenticated
-let globalStatsRef; // Firestore document reference for global stats
+// Global variables for user and stats
+let userId = localStorage.getItem('sqlGeneratorUserId') || 'user-' + Math.random().toString(36).substr(2, 12);
+let globalStats = {
+    totalGenerated: 0,
+    goodFeedback: 0,
+    badFeedback: 0,
+    totalUsers: 0
+};
 
-// --- Firebase Initialization and Authentication ---
-document.addEventListener('DOMContentLoaded', async function() {
-    // Check if Firebase is available (loaded from index.html)
-    if (typeof window.firebase === 'undefined') {
-        console.error("Firebase SDK not loaded. Please check index.html.");
-        return;
-    }
+// Save user ID to localStorage
+localStorage.setItem('sqlGeneratorUserId', userId);
 
-    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-    if (!firebaseConfig) {
-        console.error("Firebase config not found. Cannot initialize Firebase.");
-        return;
-    }
-
-    // Initialize Firebase App
-    app = window.firebase.initializeApp(firebaseConfig);
-    db = window.firebase.getFirestore(app);
-    auth = window.firebase.getAuth(app);
-
-    // Define the global stats document reference
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-    globalStatsRef = window.firebase.doc(db, `artifacts/${appId}/public/data/sqlGeneratorStats`, 'global');
-
-    // Authenticate user
+// Load global stats from API
+async function loadGlobalStats() {
     try {
-        if (initialAuthToken) {
-            await window.firebase.signInWithCustomToken(auth, initialAuthToken);
-        } else {
-            await window.firebase.signInAnonymously(auth);
+        const response = await fetch(CONFIG.STATS_API_URL);
+        if (response.ok) {
+            globalStats = await response.json();
+            updateStatsDisplay();
         }
     } catch (error) {
-        console.error("Firebase Authentication failed:", error);
+        console.error('Error loading global stats:', error);
     }
+}
 
-    // Listen for auth state changes to get the user ID
-    window.firebase.onAuthStateChanged(auth, (user) => {
-        if (user) {
-            userId = user.uid;
-            document.getElementById('userIdDisplay').textContent = userId;
-            console.log("Firebase User ID:", userId);
-            // Once authenticated, start listening to global stats
-            listenToGlobalStats();
-        } else {
-            userId = 'anonymous';
-            document.getElementById('userIdDisplay').textContent = 'Not Authenticated';
-            console.log("No Firebase user is signed in.");
+// Update stats on server
+async function updateGlobalStats(action, count = 1) {
+    try {
+        const response = await fetch(CONFIG.STATS_API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                action: action,
+                userId: userId,
+                count: count
+            })
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            globalStats = result.globalStats;
+            updateStatsDisplay();
+            return result;
         }
-    });
+    } catch (error) {
+        console.error('Error updating global stats:', error);
+    }
+}
 
-    // --- Main App Initialization (rest of the existing DOMContentLoaded logic) ---
+// Clear all stats (admin function)
+async function clearAllStats(passcode) {
+    try {
+        const response = await fetch(CONFIG.STATS_API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                action: 'clear_all',
+                userId: userId,
+                passcode: passcode
+            })
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            globalStats = result.globalStats;
+            updateStatsDisplay();
+            return true;
+        }
+        return false;
+    } catch (error) {
+        console.error('Error clearing stats:', error);
+        return false;
+    }
+}
+
+// Update stats display
+function updateStatsDisplay() {
+    document.getElementById('totalGenerated').textContent = globalStats.totalGenerated || 0;
+    document.getElementById('globalGoodCount').textContent = globalStats.goodFeedback || 0;
+    document.getElementById('globalBadCount').textContent = globalStats.badFeedback || 0;
+}
+
+// Predefined questions as fallback when AI fails
+const PREDEFINED_QUESTIONS = {
+    basic: [
+        "How many customers are in the database?",
+        "What are the names of all products in the inventory?",
+        "Which orders were placed in the last 30 days?",
+        "What is the total revenue for this month?",
+        "List all employees in the sales department.",
+        "Find all customers from New York.",
+        "What is the average price of products in the electronics category?",
+        "Show all orders with a total amount greater than $1000.",
+        "Which products are currently out of stock?",
+        "List the top 5 customers by total purchase amount.",
+        "What are the different product categories available?",
+        "Find all orders placed by customer ID 12345.",
+        "Which employees were hired in 2023?",
+        "What is the minimum and maximum salary in the company?",
+        "Show all products with a price between $50 and $200.",
+        "List customers who have never placed an order.",
+        "What is the total number of orders placed today?",
+        "Find all suppliers from California.",
+        "Which products have been discontinued?",
+        "Show the most recent 10 customer registrations."
+    ],
+    intermediate: [
+        "What is the total revenue generated by each product category?",
+        "Which customers have placed more than 5 orders in the last year?",
+        "Find the average order value for each customer segment.",
+        "List products that have never been ordered.",
+        "What is the monthly sales trend for the past 12 months?",
+        "Which employees have the highest sales performance?",
+        "Find customers who have purchased products from multiple categories.",
+        "What is the inventory turnover rate for each product?",
+        "Show the top 3 best-selling products in each category.",
+        "Which orders contain both electronics and clothing items?",
+        "Find the customer retention rate by month.",
+        "What is the average time between order placement and delivery?",
+        "List suppliers who provide products in more than one category.",
+        "Which products have the highest profit margins?",
+        "Find customers whose total purchases exceed the average customer spend.",
+        "What is the seasonal sales pattern for different product categories?",
+        "Show orders that were returned within 30 days of purchase.",
+        "Which sales representatives have exceeded their quarterly targets?",
+        "Find the correlation between customer age and purchase behavior.",
+        "What is the geographic distribution of our customer base?"
+    ],
+    advanced: [
+        "Calculate the running total of sales for each month with year-over-year comparison.",
+        "Find the top 10% of customers by lifetime value and their purchasing patterns.",
+        "What is the customer churn rate and which factors contribute to it most?",
+        "Identify products that are frequently bought together using market basket analysis.",
+        "Calculate the cohort analysis for customer retention over 24 months.",
+        "Find the optimal inventory levels using ABC analysis for each product category.",
+        "What is the customer acquisition cost and lifetime value ratio by marketing channel?",
+        "Identify seasonal trends and forecast next quarter's sales using moving averages.",
+        "Calculate the Pareto analysis (80/20 rule) for products, customers, and regions.",
+        "Find the correlation between employee performance metrics and customer satisfaction scores.",
+        "What is the impact of promotional campaigns on customer behavior and sales velocity?",
+        "Calculate the days sales outstanding (DSO) and identify payment pattern trends.",
+        "Find customers at risk of churning using RFM analysis (Recency, Frequency, Monetary).",
+        "What is the cross-selling and up-selling success rate by product combinations?",
+        "Calculate the inventory carrying costs and identify slow-moving stock.",
+        "Find the optimal pricing strategy using price elasticity analysis.",
+        "What is the customer journey analysis from first touch to conversion?",
+        "Calculate the contribution margin by product line and identify profit drivers.",
+        "Find the geographic expansion opportunities using market penetration analysis.",
+        "What is the impact of customer service interactions on repeat purchase behavior?"
+    ]
+};
+
+// Function to get random predefined questions
+function getPredefinedQuestions(level, count) {
+    const questions = PREDEFINED_QUESTIONS[level] || PREDEFINED_QUESTIONS.basic;
+    const shuffled = [...questions].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
+}
+
+// --- Main App Initialization ---
+document.addEventListener('DOMContentLoaded', async function() {
+    // Initialize global stats
+    document.getElementById('userIdDisplay').textContent = userId;
+    await loadGlobalStats();
     // DOM elements
     const levelButtons = document.querySelectorAll('.level-btn');
     const generateBtn = document.getElementById('generateBtn');
@@ -84,30 +195,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     let uploadedSchema = ''; // Stores the content of the uploaded file
     let feedbackClickedForCurrentGeneration = false; // To ensure feedback is given once per generation
 
-    // --- Firebase Global Stats Listener ---
-    function listenToGlobalStats() {
-        if (!globalStatsRef) {
-            console.error("Global stats reference not initialized.");
-            return;
-        }
-        window.firebase.onSnapshot(globalStatsRef, (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                totalGeneratedSpan.textContent = data.totalGenerated || 0;
-                globalGoodCountSpan.textContent = data.goodFeedback || 0;
-                globalBadCountSpan.textContent = data.badFeedback || 0;
-            } else {
-                // Document doesn't exist, create it with initial values
-                window.firebase.setDoc(globalStatsRef, {
-                    totalGenerated: 0,
-                    goodFeedback: 0,
-                    badFeedback: 0
-                }, { merge: true }).catch(e => console.error("Error creating global stats doc:", e));
-            }
-        }, (error) => {
-            console.error("Error listening to global stats:", error);
-        });
-    }
+    // Local stats are handled by loadLocalStats() and saveLocalStats() functions
 
     // --- 1. Clear Results button ---
     if (clearBtn) {
@@ -150,18 +238,13 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         if (code === realPass) {
             console.log('Correct password entered. Clearing global stats...');
-            try {
-                await window.firebase.setDoc(globalStatsRef, {
-                    totalGenerated: 0,
-                    goodFeedback: 0,
-                    badFeedback: 0
-                });
+            const success = await clearAllStats(code);
+            if (success) {
                 const event = new CustomEvent('show-toast', {
                     detail: { message: 'All global stats cleared!', type: 'success' }
                 });
                 document.dispatchEvent(event);
-            } catch (error) {
-                console.error("Error clearing global stats:", error);
+            } else {
                 const event = new CustomEvent('show-toast', {
                     detail: { message: 'Failed to clear stats. Try again.', type: 'error' }
                 });
@@ -264,7 +347,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         document.dispatchEvent(event);
     }
 
-    // --- Call Groq API (modified to include schema) ---
+    // --- Call Groq API directly (modified to include schema) ---
     async function callGroqAPI(level, count, schemaContext = '') {
         let basePrompt;
         if (schemaContext) {
@@ -296,7 +379,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         const response = await fetch(CONFIG.API_BASE_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify(payload)
         });
 
@@ -325,17 +410,42 @@ document.addEventListener('DOMContentLoaded', async function() {
         return questions;
     }
 
-    // --- Generate questions with retry and friendly message ---
+    // --- Generate questions with retry and predefined fallback ---
     async function generateQuestionsWithRetry(level, count, schemaContext) {
-        let questions = await callGroqAPI(level, count, schemaContext);
-        if (!questions || questions.filter(q => q && q.trim() && !q.includes('No more questions generated')).length === 0) {
-            // Retry once
+        try {
+            // First attempt with AI
+            let questions = await callGroqAPI(level, count, schemaContext);
+            const validQuestions = questions.filter(q => q && q.trim() && !q.includes('No more questions generated'));
+            
+            if (validQuestions.length >= count) {
+                return { questions: validQuestions.slice(0, count), source: 'ai' };
+            }
+            
+            // Second attempt with AI if first failed
+            console.log('First AI attempt failed, retrying...');
             questions = await callGroqAPI(level, count, schemaContext);
+            const validQuestionsRetry = questions.filter(q => q && q.trim() && !q.includes('No more questions generated'));
+            
+            if (validQuestionsRetry.length >= count) {
+                return { questions: validQuestionsRetry.slice(0, count), source: 'ai' };
+            }
+            
+            // If AI fails, use predefined questions as fallback
+            console.log('AI generation failed, using predefined questions as fallback');
+            const predefinedQuestions = getPredefinedQuestions(level, count);
+            
+            // Mix any valid AI questions with predefined ones
+            const mixedQuestions = [...validQuestionsRetry, ...predefinedQuestions];
+            const finalQuestions = mixedQuestions.slice(0, count);
+            const source = validQuestionsRetry.length > 0 ? 'mixed' : 'predefined';
+            
+            return { questions: finalQuestions, source: source };
+            
+        } catch (error) {
+            console.error('Error in AI generation, falling back to predefined questions:', error);
+            // If there's an error with AI, use predefined questions
+            return { questions: getPredefinedQuestions(level, count), source: 'predefined' };
         }
-        if (!questions || questions.filter(q => q && q.trim() && !q.includes('No more questions generated')).length === 0) {
-            return ["Sorry, couldn't generate questions at this time. Please try again later."];
-        }
-        return questions;
     }
 
     // --- Level selection ---
@@ -378,17 +488,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         badFeedback.disabled = false;
 
         try {
-            const questions = await generateQuestionsWithRetry(currentLevel, count, uploadedSchema);
-            displayQuestions(questions);
-            // Update global total generated count in Firestore
-            await window.firebase.updateDoc(globalStatsRef, {
-                totalGenerated: window.firebase.doc(db, `artifacts/${appId}/public/data/sqlGeneratorStats`, 'global').totalGenerated + questions.length // This line needs to be fixed. It should increment the existing value.
-            });
-            // Correct way to increment:
-            await window.firebase.updateDoc(globalStatsRef, {
-                totalGenerated: window.firebase.getFirestore(app).FieldValue.increment(questions.length)
-            });
-
+            const result = await generateQuestionsWithRetry(currentLevel, count, uploadedSchema);
+            displayQuestions(result.questions, result.source);
+            // Update global total generated count
+            await updateGlobalStats('generated', result.questions.length);
 
         } catch (error) {
             console.error('Error generating questions:', error);
@@ -403,8 +506,43 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
 
     // --- Display questions ---
-    function displayQuestions(questions) {
+    function displayQuestions(questions, source = 'ai') {
         questionsContainer.innerHTML = '';
+        
+        // Add source indicator
+        if (source !== 'ai') {
+            const sourceIndicator = document.createElement('div');
+            sourceIndicator.className = 'source-indicator';
+            let sourceText = '';
+            let sourceIcon = '';
+            
+            if (source === 'predefined') {
+                sourceText = 'Using predefined questions (AI unavailable)';
+                sourceIcon = 'fas fa-database';
+            } else if (source === 'mixed') {
+                sourceText = 'Mixed: AI + predefined questions';
+                sourceIcon = 'fas fa-random';
+            }
+            
+            sourceIndicator.innerHTML = `
+                <i class="${sourceIcon}"></i>
+                <span>${sourceText}</span>
+            `;
+            sourceIndicator.style.cssText = `
+                background: #fff3cd;
+                border: 1px solid #ffeaa7;
+                color: #856404;
+                padding: 8px 12px;
+                border-radius: 6px;
+                margin-bottom: 15px;
+                font-size: 14px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            `;
+            questionsContainer.appendChild(sourceIndicator);
+        }
+        
         questions.forEach((question, index) => {
             const questionDiv = document.createElement('div');
             questionDiv.className = 'question-item';
@@ -536,47 +674,27 @@ document.addEventListener('DOMContentLoaded', async function() {
     // --- Feedback button logic ---
     goodFeedback.addEventListener('click', async function() {
         if (!feedbackClickedForCurrentGeneration) {
-            try {
-                await window.firebase.updateDoc(globalStatsRef, {
-                    goodFeedback: window.firebase.getFirestore(app).FieldValue.increment(1)
-                });
-                feedbackClickedForCurrentGeneration = true;
-                goodFeedback.disabled = true;
-                badFeedback.disabled = true;
-                const event = new CustomEvent('show-toast', {
-                    detail: { message: 'Thank you for your feedback!', type: 'success' }
-                });
-                document.dispatchEvent(event);
-            } catch (error) {
-                console.error("Error updating good feedback:", error);
-                const event = new CustomEvent('show-toast', {
-                    detail: { message: 'Failed to submit feedback. Try again.', type: 'error' }
-                });
-                document.dispatchEvent(event);
-            }
+            await updateGlobalStats('good_feedback');
+            feedbackClickedForCurrentGeneration = true;
+            goodFeedback.disabled = true;
+            badFeedback.disabled = true;
+            const event = new CustomEvent('show-toast', {
+                detail: { message: 'Thank you for your feedback!', type: 'success' }
+            });
+            document.dispatchEvent(event);
         }
     });
 
     badFeedback.addEventListener('click', async function() {
         if (!feedbackClickedForCurrentGeneration) {
-            try {
-                await window.firebase.updateDoc(globalStatsRef, {
-                    badFeedback: window.firebase.getFirestore(app).FieldValue.increment(1)
-                });
-                feedbackClickedForCurrentGeneration = true;
-                goodFeedback.disabled = true;
-                badFeedback.disabled = true;
-                const event = new CustomEvent('show-toast', {
-                    detail: { message: 'Thank you for your feedback!', type: 'success' }
-                });
-                document.dispatchEvent(event);
-            } catch (error) {
-                console.error("Error updating bad feedback:", error);
-                const event = new CustomEvent('show-toast', {
-                    detail: { message: 'Failed to submit feedback. Try again.', type: 'error' }
-                });
-                document.dispatchEvent(event);
-            }
+            await updateGlobalStats('bad_feedback');
+            feedbackClickedForCurrentGeneration = true;
+            goodFeedback.disabled = true;
+            badFeedback.disabled = true;
+            const event = new CustomEvent('show-toast', {
+                detail: { message: 'Thank you for your feedback!', type: 'success' }
+            });
+            document.dispatchEvent(event);
         }
     });
 }); // End of DOMContentLoaded

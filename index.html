@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,12 +8,24 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
     <div class="sql-bg">
-      <svg class="sql-float db" viewBox="0 0 64 64"><ellipse cx="32" cy="16" rx="28" ry="10" fill="#4fd1c5"/><rect x="4" y="16" width="56" height="32" rx="14" fill="#2b6cb0"/><ellipse cx="32" cy="48" rx="28" ry="10" fill="#4fd1c5"/></svg>
-      <svg class="sql-float code" viewBox="0 0 48 48"><rect x="6" y="10" width="36" height="28" rx="6" fill="#ecc94b"/><text x="12" y="30" font-size="18" fill="#2d3748">{ }</text></svg>
-      <svg class="sql-float bracket" viewBox="0 0 40 40"><text x="0" y="32" font-size="36" fill="#f56565">[ ]</text></svg>
-      <svg class="sql-float query" viewBox="0 0 54 54"><ellipse cx="27" cy="27" rx="24" ry="10" fill="#805ad5"/><text x="14" y="34" font-size="28" fill="#fff">SQL</text></svg>
+        <svg class="sql-float db" viewBox="0 0 64 64">
+            <ellipse cx="32" cy="16" rx="28" ry="10" fill="#4fd1c5" />
+            <rect x="4" y="16" width="56" height="32" rx="14" fill="#2b6cb0" />
+            <ellipse cx="32" cy="48" rx="28" ry="10" fill="#4fd1c5" />
+        </svg>
+        <svg class="sql-float code" viewBox="0 0 48 48">
+            <rect x="6" y="10" width="36" height="28" rx="6" fill="#ecc94b" /><text x="12" y="30" font-size="18"
+                fill="#2d3748">{ }</text>
+        </svg>
+        <svg class="sql-float bracket" viewBox="0 0 40 40"><text x="0" y="32" font-size="36" fill="#f56565">[
+                ]</text></svg>
+        <svg class="sql-float query" viewBox="0 0 54 54">
+            <ellipse cx="27" cy="27" rx="24" ry="10" fill="#805ad5" /><text x="14" y="34" font-size="28"
+                fill="#fff">SQL</text>
+        </svg>
     </div>
     <div class="container">
         <header class="header">
@@ -51,7 +64,8 @@
                 <!-- New section for file upload -->
                 <div class="file-upload-section">
                     <h3><i class="fas fa-upload"></i> Upload Schema/Data (Optional)</h3>
-                    <p class="upload-tip">Upload a CSV or JSON file to provide context for question generation. This helps generate more relevant questions based on your data structure.</p>
+                    <p class="upload-tip">Upload a CSV or JSON file to provide context for question generation. This
+                        helps generate more relevant questions based on your data structure.</p>
                     <input type="file" id="schemaUpload" accept=".csv,.json" class="file-input">
                     <div id="fileStatus" class="file-status">No file chosen</div>
                     <button id="clearFileBtn" class="clear-file-btn" style="display: none;">
@@ -117,56 +131,40 @@
         <footer class="footer">
             <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
                 <button class="clear-stats-btn" id="clearStatsBtn" title="Admin: Clear Stats">
-                  <i class="fas fa-exclamation-triangle"></i>
+                    <i class="fas fa-exclamation-triangle"></i>
                 </button>
                 <div class="stats stats-centered">
                     <span><i class="fas fa-user"></i> Your User ID: <span id="userIdDisplay">Loading...</span></span>
-                    <span><i class="fas fa-clipboard-list"></i> Total Generated (Global): <span id="totalGenerated">0</span></span>
-                    <span><i class="fas fa-thumbs-up"></i> Good Feedback (Global): <span id="globalGoodCount">0</span></span>
-                    <span><i class="fas fa-thumbs-down"></i> Bad Feedback (Global): <span id="globalBadCount">0</span></span>
+                    <span><i class="fas fa-clipboard-list"></i> Total Generated (Global): <span
+                            id="totalGenerated">0</span></span>
+                    <span><i class="fas fa-thumbs-up"></i> Good Feedback (Global): <span
+                            id="globalGoodCount">0</span></span>
+                    <span><i class="fas fa-thumbs-down"></i> Bad Feedback (Global): <span
+                            id="globalBadCount">0</span></span>
                 </div>
                 <div style="width:32px;"></div>
             </div>
         </footer>
 
         <div class="passcode-modal" id="passcodeModal" style="display:none;">
-          <div class="passcode-modal-content">
-            <h4>Enter Passcode to Clear Global Stats</h4>
-            <input type="password" id="passcodeInput" placeholder="Passcode" />
-            <button id="submitPasscodeBtn">Submit</button>
-          </div>
+            <div class="passcode-modal-content">
+                <h4>Enter Passcode to Clear Global Stats</h4>
+                <input type="password" id="passcodeInput" placeholder="Passcode" />
+                <button id="submitPasscodeBtn">Submit</button>
+            </div>
         </div>
 
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="loading-spinner">
-            <i class="fas fa-spinner fa-spin"></i>
-            <p>Generating questions...</p>
+        <div class="loading-overlay" id="loadingOverlay">
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Generating questions...</p>
+            </div>
         </div>
-    </div>
 
-    <!-- Firebase SDKs -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        <!-- Firebase removed - using local storage instead -->
 
-        // Expose Firebase objects globally for script.js
-        window.firebase = {
-            initializeApp,
-            getAuth,
-            signInAnonymously,
-            signInWithCustomToken,
-            onAuthStateChanged,
-            getFirestore,
-            doc,
-            getDoc,
-            setDoc,
-            onSnapshot,
-            updateDoc
-        };
-    </script>
-
-    <script src="config.js"></script>
-    <script src="script.js"></script>
+        <script src="config.js"></script>
+        <script src="script.js"></script>
 </body>
+
 </html>
