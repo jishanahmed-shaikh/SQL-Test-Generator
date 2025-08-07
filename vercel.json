@@ -4,10 +4,6 @@
     {
       "src": "api/**/*.js",
       "use": "@vercel/node"
-    },
-    {
-      "src": "build-config.js",
-      "use": "@vercel/node"
     }
   ],
   "routes": [
@@ -19,9 +15,5 @@
       "src": "/(.*)",
       "dest": "/$1"
     }
-  ],
-  "env": {
-    "GROQ_API_KEY": "@groq_api_key"
-  },
-  "buildCommand": "node build-config.js"
+  ]
 }
