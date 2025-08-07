@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        button { padding: 10px 20px; font-size: 16px; margin: 10px 0; }
+        #result { margin-top: 20px; padding: 10px; border: 1px solid #ccc; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        pre { white-space: pre-wrap; word-wrap: break-word; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Groq API Test</h1>
+    <button onclick="testAPI()">Test API Connection</button>
+    <button onclick="testFullGeneration()">Test Full Question Generation</button>
+    <div id="result"></div>
+
+    <script>
+        async function testAPI() {
+            const result = document.getElementById('result');
+            result.innerHTML = '🔄 Testing API connection...';
+            result.className = '';
+            
+            try {
+                const response = await fetch('/api/groq', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: 'llama-3.1-70b-versatile',
+                        messages: [
+                            { role: 'user', content: 'Say "API is working" if you can read this.' }
+                        ],
+                        temperature: 0.7,
+                        max_tokens: 50
+                    })
+                });
+
+                console.log('Response status:', response.status);
+                const data = await response.json();
+                console.log('Response data:', data);
+                
+                if (response.ok && data.choices && data.choices[0]) {
+                    result.className = 'success';
+                    result.innerHTML = `
+                        <h3>✅ API Test Successful!</h3>
+                        <p><strong>Status:</strong> ${response.status}</p>
+                        <p><strong>Response:</strong> ${data.choices[0].message.content}</p>
+                        <details>
+                            <summary>Full Response</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    `;
+                } else {
+                    result.className = 'error';
+                    result.innerHTML = `
+                        <h3>❌ API Test Failed</h3>
+                        <p><strong>Status:</strong> ${response.status}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                result.className = 'error';
+                result.innerHTML = `<h3>❌ Connection Error: ${error.message}</h3>`;
+            }
+        }
+
+        async function testFullGeneration() {
+            const result = document.getElementById('result');
+            result.innerHTML = '🔄 Testing SQL question generation...';
+            result.className = '';
+            
+            try {
+                const response = await fetch('/api/groq', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: 'llama-3.1-70b-versatile',
+                        messages: [
+                            { role: 'user', content: `Generate exactly 3 SQL natural language questions for testing. These should be simple queries like counting, basic filtering, or simple aggregations. Focus on common business scenarios like customers, orders, products, sales, etc.
+
+IMPORTANT FORMATTING RULES:
+- Output EXACTLY 3 questions
+- One question per line
+- Start each question with: How, What, Which, List, Show, Find, Give, Who, Where, When, Identify, Calculate, Determine, Display, Name, Count, Retrieve, Select, Provide, or Return
+- No explanations, commentary, reasoning, preamble, or numbering
+- No empty lines between questions
+- Start your response immediately with the first question
+
+Example format:
+How many customers are in the database?
+What is the total revenue for this month?
+Which products have the highest sales?` }
+                        ],
+                        temperature: 0.7,
+                        max_tokens: 1024
+                    })
+                });
+
+                console.log('Response status:', response.status);
+                const data = await response.json();
+                console.log('Response data:', data);
+                
+                if (response.ok && data.choices && data.choices[0]) {
+                    const content = data.choices[0].message.content.trim();
+                    const questions = content.split('\n').map(q => q.trim()).filter(q => q.length > 0);
+                    
+                    result.className = 'success';
+                    result.innerHTML = `
+                        <h3>✅ Question Generation Successful!</h3>
+                        <p><strong>Generated ${questions.length} questions:</strong></p>
+                        <ol>
+                            ${questions.map(q => `<li>${q}</li>`).join('')}
+                        </ol>
+                        <details>
+                            <summary>Raw Response</summary>
+                            <pre>${content}</pre>
+                        </details>
+                    `;
+                } else {
+                    result.className = 'error';
+                    result.innerHTML = `
+                        <h3>❌ Generation Test Failed</h3>
+                        <p><strong>Status:</strong> ${response.status}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                result.className = 'error';
+                result.innerHTML = `<h3>❌ Generation Error: ${error.message}</h3>`;
+            }
+        }
+    </script>
+</body>
+</html>

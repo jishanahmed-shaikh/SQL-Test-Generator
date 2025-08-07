@@ -1,6 +1,7 @@
 # 🚀 Vercel Deployment Guide
 
 ## Prerequisites
+
 1. **Vercel Account**: Sign up at [vercel.com](https://vercel.com)
 2. **Vercel CLI**: Install globally with `npm i -g vercel`
 3. **Git Repository**: Push your code to GitHub/GitLab/Bitbucket
@@ -8,22 +9,27 @@
 ## 📋 Step-by-Step Deployment
 
 ### 1. Install Vercel CLI
+
 ```bash
 npm install -g vercel
 ```
 
 ### 2. Login to Vercel
+
 ```bash
 vercel login
 ```
 
 ### 3. Set Environment Variables
+
 In your Vercel dashboard or via CLI:
+
 ```bash
 vercel env add GROQ_API_KEY
 ```
 
 ### 4. Deploy to Vercel
+
 ```bash
 # First deployment
 vercel
@@ -35,6 +41,7 @@ vercel --prod
 ## 🔧 Alternative: GitHub Integration
 
 ### 1. Push to GitHub
+
 ```bash
 git init
 git add .
@@ -44,6 +51,7 @@ git push -u origin main
 ```
 
 ### 2. Connect to Vercel
+
 1. Go to [vercel.com/dashboard](https://vercel.com/dashboard)
 2. Click "New Project"
 3. Import your GitHub repository
@@ -53,17 +61,20 @@ git push -u origin main
 ## 🌐 Features After Deployment
 
 ### ✅ Global Stats System
+
 - **Real-time tracking** of all users across the globe
 - **Persistent storage** using Vercel's serverless functions
 - **User identification** with unique IDs stored in localStorage
 - **Admin controls** to clear global stats with passcode
 
 ### ✅ Secure API Proxy
+
 - **Hidden API keys** - never exposed to frontend
 - **CORS enabled** for cross-origin requests
 - **Error handling** with proper HTTP status codes
 
 ### ✅ Automatic Scaling
+
 - **Serverless functions** scale automatically
 - **Global CDN** for fast loading worldwide
 - **Zero maintenance** required
@@ -71,7 +82,9 @@ git push -u origin main
 ## 📊 Global Stats API Endpoints
 
 ### GET `/api/stats`
+
 Returns global statistics:
+
 ```json
 {
   "totalGenerated": 1250,
@@ -83,7 +96,9 @@ Returns global statistics:
 ```
 
 ### POST `/api/stats`
+
 Update statistics:
+
 ```json
 {
   "action": "generated|good_feedback|bad_feedback|clear_all",
@@ -103,6 +118,7 @@ Update statistics:
 ## 📈 Monitoring
 
 After deployment, you can monitor:
+
 - **Function logs** in Vercel dashboard
 - **Usage statistics** via the stats API
 - **Performance metrics** in Vercel analytics
@@ -110,6 +126,7 @@ After deployment, you can monitor:
 ## 🛠️ Local Development
 
 For local testing with global stats:
+
 ```bash
 # Install dependencies
 npm install
@@ -124,6 +141,7 @@ npm run build
 ## 🎯 Production URL Structure
 
 After deployment, your app will be available at:
+
 - **Main App**: `https://your-app-name.vercel.app/`
 - **Stats API**: `https://your-app-name.vercel.app/api/stats`
 - **Groq Proxy**: `https://your-app-name.vercel.app/api/groq`
@@ -131,6 +149,7 @@ After deployment, your app will be available at:
 ## 🔄 Updates
 
 To update your deployed app:
+
 ```bash
 # Make changes to your code
 git add .

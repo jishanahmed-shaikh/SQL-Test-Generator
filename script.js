@@ -1,90 +1,141 @@
-console.log('Script loaded!');
+console.log('SQL Test Cases Generator v2.0 - Loaded');
 
-// Global variables for user and stats
-let userId = localStorage.getItem('sqlGeneratorUserId') || 'user-' + Math.random().toString(36).substr(2, 12);
-let globalStats = {
-    totalGenerated: 0,
-    goodFeedback: 0,
-    badFeedback: 0,
-    totalUsers: 0
+// Global application state
+const AppState = {
+    userId: localStorage.getItem('sqlGeneratorUserId') || 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 8),
+    globalStats: {
+        totalGenerated: 0,
+        goodFeedback: 0,
+        badFeedback: 0,
+        totalUsers: 0
+    },
+    currentLevel: null,
+    uploadedSchema: '',
+    feedbackGiven: false,
+    isGenerating: false
 };
 
 // Save user ID to localStorage
-localStorage.setItem('sqlGeneratorUserId', userId);
+localStorage.setItem('sqlGeneratorUserId', AppState.userId);
 
-// Load global stats from API
-async function loadGlobalStats() {
-    try {
-        const response = await fetch(CONFIG.STATS_API_URL);
-        if (response.ok) {
-            globalStats = await response.json();
-            updateStatsDisplay();
-        }
-    } catch (error) {
-        console.error('Error loading global stats:', error);
-    }
-}
+// API utility functions with error handling and retries
+const ApiUtils = {
+    // Load global stats with retry logic
+    async loadGlobalStats(retries = 3) {
+        for (let i = 0; i < retries; i++) {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
-// Update stats on server
-async function updateGlobalStats(action, count = 1) {
-    try {
-        const response = await fetch(CONFIG.STATS_API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                action: action,
-                userId: userId,
-                count: count
-            })
-        });
+                const response = await fetch(CONFIG.STATS_API_URL, {
+                    signal: controller.signal,
+                    headers: { 'Cache-Control': 'no-cache' }
+                });
 
-        if (response.ok) {
-            const result = await response.json();
-            globalStats = result.globalStats;
-            updateStatsDisplay();
-            return result;
-        }
-    } catch (error) {
-        console.error('Error updating global stats:', error);
-    }
-}
+                clearTimeout(timeoutId);
 
-// Clear all stats (admin function)
-async function clearAllStats(passcode) {
-    try {
-        const response = await fetch(CONFIG.STATS_API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                action: 'clear_all',
-                userId: userId,
-                passcode: passcode
-            })
-        });
-
-        if (response.ok) {
-            const result = await response.json();
-            globalStats = result.globalStats;
-            updateStatsDisplay();
-            return true;
+                if (response.ok) {
+                    AppState.globalStats = await response.json();
+                    this.updateStatsDisplay();
+                    return true;
+                }
+            } catch (error) {
+                console.warn(`Stats load attempt ${i + 1} failed:`, error.message);
+                if (i === retries - 1) {
+                    console.error('Failed to load global stats after all retries');
+                }
+                await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1))); // Exponential backoff
+            }
         }
         return false;
-    } catch (error) {
-        console.error('Error clearing stats:', error);
-        return false;
-    }
-}
+    },
 
-// Update stats display
-function updateStatsDisplay() {
-    document.getElementById('totalGenerated').textContent = globalStats.totalGenerated || 0;
-    document.getElementById('globalGoodCount').textContent = globalStats.goodFeedback || 0;
-    document.getElementById('globalBadCount').textContent = globalStats.badFeedback || 0;
-}
+    // Update stats with validation and retry
+    async updateGlobalStats(action, count = 1, retries = 2) {
+        // Validate inputs
+        if (!['generated', 'good_feedback', 'bad_feedback'].includes(action)) {
+            console.error('Invalid action:', action);
+            return false;
+        }
+
+        for (let i = 0; i < retries; i++) {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
+                const response = await fetch(CONFIG.STATS_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: action,
+                        userId: AppState.userId,
+                        count: Math.max(1, Math.min(count, 10)) // Clamp 1-10
+                    }),
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+
+                if (response.ok) {
+                    const result = await response.json();
+                    AppState.globalStats = result.globalStats;
+                    this.updateStatsDisplay();
+                    return result;
+                }
+            } catch (error) {
+                console.warn(`Stats update attempt ${i + 1} failed:`, error.message);
+                if (i === retries - 1) {
+                    console.error('Failed to update stats after all retries');
+                }
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        }
+        return false;
+    },
+
+    // Admin function to clear all stats
+    async clearAllStats(passcode) {
+        try {
+            const response = await fetch(CONFIG.STATS_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'clear_all',
+                    userId: AppState.userId,
+                    passcode: passcode
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                AppState.globalStats = result.globalStats;
+                this.updateStatsDisplay();
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Error clearing stats:', error);
+            return false;
+        }
+    },
+
+    // Update UI with current stats
+    updateStatsDisplay() {
+        const elements = {
+            totalGenerated: document.getElementById('totalGenerated'),
+            globalGoodCount: document.getElementById('globalGoodCount'),
+            globalBadCount: document.getElementById('globalBadCount')
+        };
+
+        Object.entries(elements).forEach(([key, element]) => {
+            if (element) {
+                const statKey = key === 'totalGenerated' ? 'totalGenerated' : 
+                               key === 'globalGoodCount' ? 'goodFeedback' : 'badFeedback';
+                element.textContent = AppState.globalStats[statKey] || 0;
+            }
+        });
+    }
+};
 
 // Predefined questions as fallback when AI fails
 const PREDEFINED_QUESTIONS = {
@@ -165,9 +216,15 @@ function getPredefinedQuestions(level, count) {
 
 // --- Main App Initialization ---
 document.addEventListener('DOMContentLoaded', async function() {
-    // Initialize global stats
-    document.getElementById('userIdDisplay').textContent = userId;
-    await loadGlobalStats();
+    console.log('Initializing SQL Test Cases Generator...');
+    
+    // Initialize UI
+    document.getElementById('userIdDisplay').textContent = AppState.userId;
+    
+    // Load global stats
+    await ApiUtils.loadGlobalStats();
+    
+    console.log('App initialized successfully');
     // DOM elements
     const levelButtons = document.querySelectorAll('.level-btn');
     const generateBtn = document.getElementById('generateBtn');
@@ -233,36 +290,26 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     async function handlePasscodeSubmit() {
         const code = passcodeInput.value.trim();
-        const realPass = '1072025'; // Correct password
         passcodeModal.style.display = 'none';
 
-        if (code === realPass) {
-            console.log('Correct password entered. Clearing global stats...');
-            const success = await clearAllStats(code);
+        if (code === '1072025') {
+            console.log('Admin access granted. Clearing global stats...');
+            const success = await ApiUtils.clearAllStats(code);
             if (success) {
-                const event = new CustomEvent('show-toast', {
-                    detail: { message: 'All global stats cleared!', type: 'success' }
-                });
-                document.dispatchEvent(event);
+                showToast('All global stats cleared successfully!', 'success');
             } else {
-                const event = new CustomEvent('show-toast', {
-                    detail: { message: 'Failed to clear stats. Try again.', type: 'error' }
-                });
-                document.dispatchEvent(event);
+                showToast('Failed to clear stats. Please try again.', 'error');
             }
         } else {
-            console.log('Wrong password entered');
+            console.log('Invalid admin passcode');
             if (clearStatsBtn) {
                 clearStatsBtn.classList.add('break');
                 setTimeout(() => {
                     clearStatsBtn.remove();
-                    console.log('Button removed after wrong password');
+                    console.log('Admin button removed after invalid passcode');
                 }, 700);
             }
-            const event = new CustomEvent('show-toast', {
-                detail: { message: 'Incorrect passcode.', type: 'error' }
-            });
-            document.dispatchEvent(event);
+            showToast('Invalid admin passcode. Access denied.', 'error');
         }
     }
 
@@ -349,11 +396,13 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // --- Call Groq API directly (modified to include schema) ---
     async function callGroqAPI(level, count, schemaContext = '') {
+        console.log(`🤖 Attempting AI generation: ${level} level, ${count} questions`);
+        
         let basePrompt;
         if (schemaContext) {
-            basePrompt = `Generate ${count} SQL natural language questions for testing, based on the following schema/data:\n\n${schemaContext}\n\n`;
+            basePrompt = `Generate exactly ${count} SQL natural language questions for testing, based on the following schema/data:\n\n${schemaContext}\n\n`;
         } else {
-            basePrompt = `Generate ${count} SQL natural language questions for testing.`;
+            basePrompt = `Generate exactly ${count} SQL natural language questions for testing.`;
         }
 
         const prompts = {
@@ -362,7 +411,20 @@ document.addEventListener('DOMContentLoaded', async function() {
             advanced: `${basePrompt} These should involve complex JOINs, window functions, CTEs, nested subqueries, and advanced analytics. Include time-series analysis, ranking, and complex business logic.`
         };
 
-        const finalPrompt = `${prompts[level]}\nIMPORTANT: Output ONLY the questions, one per line, with no explanations, no commentary, no reasoning, no preamble, and no numbering. Start your response immediately with the first question.`;
+        const finalPrompt = `${prompts[level]}
+
+IMPORTANT FORMATTING RULES:
+- Output EXACTLY ${count} questions
+- One question per line
+- Start each question with: How, What, Which, List, Show, Find, Give, Who, Where, When, Identify, Calculate, Determine, Display, Name, Count, Retrieve, Select, Provide, or Return
+- No explanations, commentary, reasoning, preamble, or numbering
+- No empty lines between questions
+- Start your response immediately with the first question
+
+Example format:
+How many customers are in the database?
+What is the total revenue for this month?
+Which products have the highest sales?`;
 
         const payload = {
             model: CONFIG.MODEL,
@@ -372,13 +434,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             temperature: CONFIG.TEMPERATURE,
             max_tokens: CONFIG.MAX_TOKENS,
             top_p: CONFIG.TOP_P,
-            stream: false,
-            reasoning_effort: CONFIG.REASONING_EFFORT,
-            stop: null
+            stream: false
         };
 
-        console.log('Making API request to:', CONFIG.API_BASE_URL);
-        console.log('Payload:', payload);
+        console.log('🌐 Making API request to:', CONFIG.API_BASE_URL);
 
         const response = await fetch(CONFIG.API_BASE_URL, {
             method: 'POST',
@@ -388,72 +447,86 @@ document.addEventListener('DOMContentLoaded', async function() {
             body: JSON.stringify(payload)
         });
 
-        console.log('API Response status:', response.status, response.statusText);
+        console.log('📡 API Response status:', response.status, response.statusText);
 
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            console.error('API Error Response:', errorData);
-            throw new Error(`API request failed: ${response.status} - ${response.statusText}. Details: ${JSON.stringify(errorData)}`);
+            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+            console.error('❌ API Error Response:', errorData);
+            throw new Error(`API request failed: ${response.status} - ${errorData.error || response.statusText}`);
         }
         
         const data = await response.json();
-        console.log('API Response data:', data);
+        console.log('📦 API Response received');
         
         if (!data.choices || data.choices.length === 0 || !data.choices[0].message) {
-            console.error('Invalid API response structure:', data);
-            throw new Error("Invalid API response structure.");
+            console.error('❌ Invalid API response structure:', data);
+            throw new Error("Invalid API response structure");
         }
 
-        const questionsText = data.choices[0].message.content;
+        const questionsText = data.choices[0].message.content.trim();
+        console.log('📝 Raw AI response:', questionsText);
+        
+        // More flexible question parsing
         let questions = questionsText
             .split('\n')
             .map(q => q.trim())
-            .filter(q => q.match(/^(How|What|Which|List|Show|Find|Give|Who|Where|When|Identify|Calculate|Determine|Display|Name|Count|Retrieve|Select|Provide|Return)\b/i));
+            .filter(q => q.length > 10) // Filter out very short responses
+            .filter(q => !q.match(/^(Here|Below|The following|These are|I'll|Let me)/i)) // Remove intro text
+            .map(q => q.replace(/^\d+[\.\)]\s*/, '')) // Remove numbering
+            .filter(q => q.length > 0);
 
-        // Always return exactly 'count' questions
-        if (questions.length < count) {
-            for (let i = questions.length; i < count; i++) {
-                questions.push('(No more questions generated by AI)');
-            }
-        } else if (questions.length > count) {
-            questions = questions.slice(0, count);
-        }
-        return questions;
+        console.log('✅ Parsed questions:', questions);
+
+        // Return the questions we got (don't pad with error messages)
+        return questions.slice(0, count);
     }
 
     // --- Generate questions with retry and predefined fallback ---
     async function generateQuestionsWithRetry(level, count, schemaContext) {
+        console.log(`🎯 Starting question generation: ${level} level, ${count} questions`);
+        
         try {
             // First attempt with AI
+            console.log('🚀 First AI attempt...');
             let questions = await callGroqAPI(level, count, schemaContext);
-            const validQuestions = questions.filter(q => q && q.trim() && !q.includes('No more questions generated'));
             
-            if (validQuestions.length >= count) {
-                return { questions: validQuestions.slice(0, count), source: 'ai' };
+            // Check if we got any valid questions (be more lenient)
+            if (questions && questions.length > 0) {
+                console.log(`✅ AI Success! Got ${questions.length} questions`);
+                // Pad with predefined if we didn't get enough
+                if (questions.length < count) {
+                    const needed = count - questions.length;
+                    const predefined = getPredefinedQuestions(level, needed);
+                    questions = [...questions, ...predefined];
+                    console.log(`📝 Padded with ${needed} predefined questions`);
+                    return { questions: questions.slice(0, count), source: 'mixed' };
+                }
+                return { questions: questions.slice(0, count), source: 'ai' };
             }
             
             // Second attempt with AI if first failed
-            console.log('First AI attempt failed, retrying...');
+            console.log('🔄 First attempt failed, retrying...');
             questions = await callGroqAPI(level, count, schemaContext);
-            const validQuestionsRetry = questions.filter(q => q && q.trim() && !q.includes('No more questions generated'));
             
-            if (validQuestionsRetry.length >= count) {
-                return { questions: validQuestionsRetry.slice(0, count), source: 'ai' };
+            if (questions && questions.length > 0) {
+                console.log(`✅ AI Retry Success! Got ${questions.length} questions`);
+                // Pad with predefined if we didn't get enough
+                if (questions.length < count) {
+                    const needed = count - questions.length;
+                    const predefined = getPredefinedQuestions(level, needed);
+                    questions = [...questions, ...predefined];
+                    console.log(`📝 Padded with ${needed} predefined questions`);
+                    return { questions: questions.slice(0, count), source: 'mixed' };
+                }
+                return { questions: questions.slice(0, count), source: 'ai' };
             }
             
-            // If AI fails, use predefined questions as fallback
-            console.log('AI generation failed, using predefined questions as fallback');
-            const predefinedQuestions = getPredefinedQuestions(level, count);
-            
-            // Mix any valid AI questions with predefined ones
-            const mixedQuestions = [...validQuestionsRetry, ...predefinedQuestions];
-            const finalQuestions = mixedQuestions.slice(0, count);
-            const source = validQuestionsRetry.length > 0 ? 'mixed' : 'predefined';
-            
-            return { questions: finalQuestions, source: source };
+            // If AI completely fails, use predefined questions
+            console.log('❌ AI generation failed completely, using predefined questions');
+            return { questions: getPredefinedQuestions(level, count), source: 'predefined' };
             
         } catch (error) {
-            console.error('Error in AI generation, falling back to predefined questions:', error);
+            console.error('💥 Error in AI generation:', error);
             // If there's an error with AI, use predefined questions
             return { questions: getPredefinedQuestions(level, count), source: 'predefined' };
         }
@@ -465,7 +538,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
 
     function selectLevel(level) {
-        currentLevel = level;
+        AppState.currentLevel = level;
         levelButtons.forEach(btn => {
             btn.classList.remove('active');
             if (btn.dataset.level === level) {
@@ -477,32 +550,35 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // --- Generate questions ---
     generateBtn.addEventListener('click', async function() {
-        if (!currentLevel) {
-            const event = new CustomEvent('show-toast', {
-                detail: { message: 'Please select a difficulty level first!', type: 'error' }
-            });
-            document.dispatchEvent(event);
+        if (!AppState.currentLevel) {
+            showToast('Please select a difficulty level first!', 'error');
+            return;
+        }
+        
+        if (AppState.isGenerating) {
+            showToast('Generation already in progress...', 'info');
             return;
         }
         const count = parseInt(testCaseCount.value);
-        if (count < 1 || count > 10) {
-            const event = new CustomEvent('show-toast', {
-                detail: { message: 'Please select between 1 and 10 test cases!', type: 'error' }
-            });
-            document.dispatchEvent(event);
+        if (count < CONFIG.MIN_QUESTIONS || count > CONFIG.MAX_QUESTIONS) {
+            showToast(`Please select between ${CONFIG.MIN_QUESTIONS} and ${CONFIG.MAX_QUESTIONS} test cases!`, 'error');
             return;
         }
+        
+        // Reset UI state
         showLoading(true);
         generateBtn.disabled = true;
-        feedbackClickedForCurrentGeneration = false; // Reset feedback state for new generation
+        AppState.feedbackGiven = false;
         goodFeedback.disabled = false;
         badFeedback.disabled = false;
 
         try {
-            const result = await generateQuestionsWithRetry(currentLevel, count, uploadedSchema);
+            AppState.isGenerating = true;
+            const result = await generateQuestionsWithRetry(AppState.currentLevel, count, AppState.uploadedSchema);
             displayQuestions(result.questions, result.source);
-            // Update global total generated count
-            await updateGlobalStats('generated', result.questions.length);
+            
+            // Update global stats
+            await ApiUtils.updateGlobalStats('generated', result.questions.length);
 
         } catch (error) {
             console.error('Error generating questions:', error);
@@ -513,6 +589,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         } finally {
             showLoading(false);
             generateBtn.disabled = false;
+            AppState.isGenerating = false;
         }
     });
 
@@ -684,28 +761,30 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // --- Feedback button logic ---
     goodFeedback.addEventListener('click', async function() {
-        if (!feedbackClickedForCurrentGeneration) {
-            await updateGlobalStats('good_feedback');
-            feedbackClickedForCurrentGeneration = true;
-            goodFeedback.disabled = true;
-            badFeedback.disabled = true;
-            const event = new CustomEvent('show-toast', {
-                detail: { message: 'Thank you for your feedback!', type: 'success' }
-            });
-            document.dispatchEvent(event);
+        if (!AppState.feedbackGiven) {
+            const success = await ApiUtils.updateGlobalStats('good_feedback');
+            if (success) {
+                AppState.feedbackGiven = true;
+                goodFeedback.disabled = true;
+                badFeedback.disabled = true;
+                showToast('Thank you for your positive feedback!', 'success');
+            } else {
+                showToast('Failed to submit feedback. Please try again.', 'error');
+            }
         }
     });
 
     badFeedback.addEventListener('click', async function() {
-        if (!feedbackClickedForCurrentGeneration) {
-            await updateGlobalStats('bad_feedback');
-            feedbackClickedForCurrentGeneration = true;
-            goodFeedback.disabled = true;
-            badFeedback.disabled = true;
-            const event = new CustomEvent('show-toast', {
-                detail: { message: 'Thank you for your feedback!', type: 'success' }
-            });
-            document.dispatchEvent(event);
+        if (!AppState.feedbackGiven) {
+            const success = await ApiUtils.updateGlobalStats('bad_feedback');
+            if (success) {
+                AppState.feedbackGiven = true;
+                goodFeedback.disabled = true;
+                badFeedback.disabled = true;
+                showToast('Thank you for your feedback! We\'ll work to improve.', 'success');
+            } else {
+                showToast('Failed to submit feedback. Please try again.', 'error');
+            }
         }
     });
 }); // End of DOMContentLoaded
