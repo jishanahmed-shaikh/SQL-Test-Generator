@@ -1,5 +1,7 @@
+<div align="center">
 
 # 🧠 SQL Query Test Cases Generator
+</div>
 
 A modern web application that generates natural language 
 questions for SQL testing across different difficulty levels.
