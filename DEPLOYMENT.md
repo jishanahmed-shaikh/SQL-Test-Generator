@@ -21,7 +21,6 @@ vercel login
 In your Vercel dashboard or via CLI:
 ```bash
 vercel env add GROQ_API_KEY
-# Enter your API key when prompted: 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
 ```
 
 ### 4. Deploy to Vercel
