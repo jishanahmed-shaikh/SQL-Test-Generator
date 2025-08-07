@@ -110,7 +110,7 @@ body {
     margin-bottom: 20px;
 }
 
-.level-selection h3, .quantity-selection h3 {
+.level-selection h3, .quantity-selection h3, .file-upload-section h3 {
     color: #4a5568;
     margin-bottom: 10px;
     font-size: 1.1em;
@@ -830,4 +830,99 @@ body {
 .clear-stats-btn.break {
   animation: breakAndFade 0.7s forwards;
   pointer-events: none;
+}
+
+/* New styles for File Upload Section */
+.file-upload-section {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.file-upload-section h3 {
+    margin-bottom: 10px;
+}
+
+.upload-tip {
+    color: #718096;
+    font-size: 0.9em;
+    margin-bottom: 15px;
+    line-height: 1.4;
+}
+
+.file-input {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    background-color: white;
+    color: #4a5568;
+    font-size: 0.95em;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: border-color 0.3s ease;
+}
+
+.file-input:hover {
+    border-color: #667eea;
+}
+
+.file-status {
+    font-size: 0.85em;
+    color: #718096;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.clear-file-btn {
+    padding: 8px 15px;
+    background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.85em;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin: 0 auto 15px auto; /* Center the button and add bottom margin */
+}
+
+.clear-file-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(245, 101, 101, 0.3);
+}
+
+.uploaded-content-preview {
+    background: #f7fafc;
+    border-radius: 10px;
+    padding: 15px;
+    border: 1px solid #e2e8f0;
+    margin-top: 15px;
+}
+
+.uploaded-content-preview h4 {
+    color: #4a5568;
+    margin-bottom: 10px;
+    font-size: 1em;
+}
+
+#uploadedSchemaDisplay {
+    background: #edf2f7;
+    border-radius: 8px;
+    padding: 10px;
+    white-space: pre-wrap; /* Preserve whitespace and wrap text */
+    word-break: break-all; /* Break long words */
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.85em;
+    color: #2d3748;
+    max-height: 200px; /* Limit height */
+    overflow-y: auto; /* Add scroll if content overflows */
+    border: 1px solid #cbd5e0;
 }

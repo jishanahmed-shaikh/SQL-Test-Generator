@@ -26,6 +26,7 @@
                     <h3><i class="fas fa-info-circle"></i> Instructions</h3>
                     <ol>
                         <li>Select your desired difficulty level</li>
+                        <li>(Optional) Upload a CSV/JSON file to provide schema context</li>
                         <li>Choose the number of test cases (1-10)</li>
                         <li>Click Generate to create questions</li>
                         <li>Copy questions and provide feedback</li>
@@ -46,6 +47,22 @@
                         </button>
                     </div>
                 </div>
+
+                <!-- New section for file upload -->
+                <div class="file-upload-section">
+                    <h3><i class="fas fa-upload"></i> Upload Schema/Data (Optional)</h3>
+                    <p class="upload-tip">Upload a CSV or JSON file to provide context for question generation. This helps generate more relevant questions based on your data structure.</p>
+                    <input type="file" id="schemaUpload" accept=".csv,.json" class="file-input">
+                    <div id="fileStatus" class="file-status">No file chosen</div>
+                    <button id="clearFileBtn" class="clear-file-btn" style="display: none;">
+                        <i class="fas fa-times-circle"></i> Clear Uploaded Data
+                    </button>
+                    <div class="uploaded-content-preview" id="uploadedContentPreview" style="display: none;">
+                        <h4>Preview:</h4>
+                        <pre id="uploadedSchemaDisplay"></pre>
+                    </div>
+                </div>
+                <!-- End new section -->
 
                 <div class="quantity-selection">
                     <h3><i class="fas fa-hashtag"></i> Number of Test Cases</h3>
@@ -103,8 +120,10 @@
                   <i class="fas fa-exclamation-triangle"></i>
                 </button>
                 <div class="stats stats-centered">
-                    <span><i class="fas fa-user"></i> User Number: <span id="userCount">1</span></span>
-                    <span><i class="fas fa-clipboard-list"></i> Total Test Cases Generated Until Now: <span id="totalGenerated">0</span></span>
+                    <span><i class="fas fa-user"></i> Your User ID: <span id="userIdDisplay">Loading...</span></span>
+                    <span><i class="fas fa-clipboard-list"></i> Total Generated (Global): <span id="totalGenerated">0</span></span>
+                    <span><i class="fas fa-thumbs-up"></i> Good Feedback (Global): <span id="globalGoodCount">0</span></span>
+                    <span><i class="fas fa-thumbs-down"></i> Bad Feedback (Global): <span id="globalBadCount">0</span></span>
                 </div>
                 <div style="width:32px;"></div>
             </div>
@@ -112,7 +131,7 @@
 
         <div class="passcode-modal" id="passcodeModal" style="display:none;">
           <div class="passcode-modal-content">
-            <h4>Enter Passcode to Clear Stats</h4>
+            <h4>Enter Passcode to Clear Global Stats</h4>
             <input type="password" id="passcodeInput" placeholder="Passcode" />
             <button id="submitPasscodeBtn">Submit</button>
           </div>
@@ -124,6 +143,28 @@
             <p>Generating questions...</p>
         </div>
     </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Expose Firebase objects globally for script.js
+        window.firebase = {
+            initializeApp,
+            getAuth,
+            signInAnonymously,
+            signInWithCustomToken,
+            onAuthStateChanged,
+            getFirestore,
+            doc,
+            getDoc,
+            setDoc,
+            onSnapshot,
+            updateDoc
+        };
+    </script>
 
     <script src="config.js"></script>
     <script src="script.js"></script>
